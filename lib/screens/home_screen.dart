@@ -1,0 +1,786 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../theme.dart';
+import '../../models/app_state.dart';
+import 'locations_screen.dart';
+import 'my_bookings_screen.dart';
+import 'profile_screen.dart';
+import '../utils/translate.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentTab = 0;
+  String _currentLanguage = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('language_code') ?? 'en';
+    setState(() {
+      _currentLanguage = languageCode;
+    });
+  }
+
+  Future<void> _changeLanguage(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language_code', languageCode);
+    setState(() {
+      _currentLanguage = languageCode;
+    });
+    // Force rebuild of the entire UI
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
+
+  void _showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Language'),
+        backgroundColor: AppTheme.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.flag, color: Colors.blue),
+              title: const Text('English'),
+              trailing: _currentLanguage == 'en' 
+                  ? const Icon(Icons.check, color: Colors.green) 
+                  : null,
+              onTap: () {
+                _changeLanguage('en');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag, color: Colors.orange),
+              title: const Text('தமிழ் (Tamil)'),
+              trailing: _currentLanguage == 'ta' 
+                  ? const Icon(Icons.check, color: Colors.green) 
+                  : null,
+              onTap: () {
+                _changeLanguage('ta');
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_currentLanguage == 'ta' ? 'பூட்டறைகளை கண்டுபிடிக்கவும்' : 'Find Lockers'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            onPressed: _showLanguageDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_currentLanguage == 'ta' ? 'அறிவிப்புகள் விரைவில் வரும்!' : 'Notifications coming soon!')),
+              );
+            },
+          ),
+        ],
+      ),
+      drawer: _buildDrawer(context),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
+        ),
+        child: IndexedStack(
+          index: _currentTab,
+          children: [
+            _ModernHomeTab(language: _currentLanguage),
+            LocationsScreen(selectedArea: 'Peelamedu'),
+            MyBookingsScreen(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          boxShadow: AppTheme.softShadow,
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentTab,
+          onDestinationSelected: (index) => setState(() => _currentTab = index),
+          backgroundColor: AppTheme.surface,
+          elevation: 0,
+          height: 70,
+          indicatorColor: AppTheme.primary.withOpacity(0.2),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              label: _currentLanguage == 'ta' ? 'முகப்பு' : 'Home',
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.backpack_outlined),
+              selectedIcon: const Icon(Icons.backpack_rounded),
+              label: _currentLanguage == 'ta' ? 'முன்பதிவு' : 'Book',
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.receipt_long_outlined),
+              selectedIcon: const Icon(Icons.receipt_long_rounded),
+              label: _currentLanguage == 'ta' ? 'முன்பதிவுகள்' : 'Bookings',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: AppTheme.glowShadow,
+                  ),
+                  child: CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      AppState.userName.isNotEmpty
+                          ? AppState.userName[0].toUpperCase()
+                          : 'H',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.brand,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  AppState.userName.isNotEmpty ? AppState.userName : (_currentLanguage == 'ta' ? 'விருந்தினர் பயனர்' : 'Guest User'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppState.userEmail.isNotEmpty ? AppState.userEmail : 'user@example.com',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: Text(_currentLanguage == 'ta' ? 'சுயவிவரம்' : 'Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(_currentLanguage == 'ta' ? 'முன்பதிவு வரலாறு' : 'Booking History'),
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _currentTab = 2);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.wallet_outlined),
+            title: Text(_currentLanguage == 'ta' ? 'பணப்பை' : 'Wallet'),
+            trailing: Chip(
+              label: Text('₹0'),
+              backgroundColor: AppTheme.brandLight,
+              labelStyle: const TextStyle(color: AppTheme.brand),
+            ),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_currentLanguage == 'ta' ? 'பணப்பை அம்சம் விரைவில் வரும்!' : 'Wallet feature coming soon!')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(_currentLanguage == 'ta' ? 'மொழி' : 'Language'),
+            trailing: DropdownButton<String>(
+              value: _currentLanguage,
+              dropdownColor: AppTheme.surfaceLight,
+              items: const [
+                DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(value: 'ta', child: Text('தமிழ்')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  _changeLanguage(value);
+                }
+              },
+            ),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: Text(_currentLanguage == 'ta' ? 'உதவி' : 'Help & Support'),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_currentLanguage == 'ta' ? 'உதவி விரைவில் வரும்!' : 'Support coming soon!')),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: Text(_currentLanguage == 'ta' ? 'வெளியேறு' : 'Logout', style: const TextStyle(color: Colors.red)),
+            onTap: () {
+              _showLogoutDialog(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(_currentLanguage == 'ta' ? 'வெளியேறு' : 'Logout'),
+          content: Text(_currentLanguage == 'ta' ? 'நீங்கள் வெளியேற விரும்புகிறீர்களா?' : 'Are you sure you want to logout?'),
+          backgroundColor: AppTheme.surfaceLight,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(_currentLanguage == 'ta' ? 'ரத்து செய்யுங்கள்' : 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                AppState.clear();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/',
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(_currentLanguage == 'ta' ? 'வெளியேறு' : 'Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ModernHomeTab extends StatelessWidget {
+  final String language;
+  const _ModernHomeTab({required this.language});
+
+  final List<Map<String, dynamic>> lockers = const [
+    {'name': 'Chennai Central Station', 'address': 'Platform 3, Near Exit B', 'price': 20, 'available': true, 'rating': 4.8},
+    {'name': 'T. Nagar Bus Stand', 'address': 'Main entrance, Left side', 'price': 20, 'available': true, 'rating': 4.6},
+    {'name': 'Koyambedu Metro Station', 'address': 'Concourse area, Ground floor', 'price': 20, 'available': false, 'rating': 4.7},
+    {'name': 'Egmore Railway Station', 'address': 'Gate 2, Near ticket counter', 'price': 20, 'available': true, 'rating': 4.5},
+    {'name': 'Chennai Airport', 'address': 'Arrival terminal, Gate 3', 'price': 25, 'available': true, 'rating': 4.9},
+    {'name': 'Tambaram Station', 'address': 'Platform 1, Near exit', 'price': 18, 'available': true, 'rating': 4.4},
+    {'name': 'Velachery Station', 'address': 'Main Road, Near bus stop', 'price': 20, 'available': true, 'rating': 4.3},
+    {'name': 'Guindy Railway', 'address': 'Station Road, East side', 'price': 22, 'available': false, 'rating': 4.2},
+    {'name': 'St Thomas Mount', 'address': 'Near metro station', 'price': 20, 'available': true, 'rating': 4.6},
+    {'name': 'Nungambakkam', 'address': 'College road, Near Starbucks', 'price': 25, 'available': true, 'rating': 4.7},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.delayed(const Duration(seconds: 1));
+      },
+      color: AppTheme.primary,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          SliverToBoxAdapter(
+            child: _buildHeader(context),
+          ),
+          SliverToBoxAdapter(child: const SizedBox(height: 24)),
+          SliverToBoxAdapter(
+            child: _buildSearchBar(context),
+          ),
+          SliverToBoxAdapter(child: const SizedBox(height: 24)),
+          SliverToBoxAdapter(
+            child: _buildQuickActions(context),
+          ),
+          SliverToBoxAdapter(child: const SizedBox(height: 32)),
+          SliverToBoxAdapter(
+            child: _buildSectionTitle(context),
+          ),
+          SliverToBoxAdapter(child: const SizedBox(height: 16)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _buildLockerCard(context, index),
+                childCount: lockers.length,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  language == 'ta' 
+                      ? 'வணக்கம், ${AppState.userName.isNotEmpty ? AppState.userName : "விருந்தினர்"}!' 
+                      : 'Hello, ${AppState.userName.isNotEmpty ? AppState.userName : "Guest"}!',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: AppTheme.glowShadow,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on, size: 16, color: Colors.white),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Peelamedu, Coimbatore',
+                        style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down, size: 20, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              shape: BoxShape.circle,
+              boxShadow: AppTheme.glowShadow,
+            ),
+            child: CircleAvatar(
+              radius: 32,
+              backgroundColor: Colors.transparent,
+              child: Text(
+                AppState.userName.isNotEmpty
+                    ? AppState.userName[0].toUpperCase()
+                    : 'U',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceLight,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTheme.smallShadow,
+        ),
+        child: TextField(
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+          decoration: InputDecoration(
+            hintText: language == 'ta' ? 'பூட்டறை இடங்களை தேடுங்கள்...' : 'Search locker locations...',
+            hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+            prefixIcon: const Icon(Icons.search, color: AppTheme.primary),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.tune, color: Colors.white, size: 20),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: AppTheme.surfaceLight,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ActionCard(
+              icon: Icons.backpack_rounded,
+              label: language == 'ta' ? 'பூட்டறை முன்பதிவு செய்யுங்கள்' : 'Book a Locker',
+              color: AppTheme.primary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LocationsScreen(selectedArea: 'Peelamedu'),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _ActionCard(
+              icon: Icons.receipt_long_rounded,
+              label: language == 'ta' ? 'என் முன்பதிவுகள்' : 'My Bookings',
+              color: AppTheme.secondary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _ActionCard(
+              icon: Icons.qr_code_scanner_rounded,
+              label: language == 'ta' ? 'பையை கண்காணிக்கவும்' : 'Track Bag',
+              color: AppTheme.accent,
+              onTap: () => _showComingSoon(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            language == 'ta' ? 'பரிந்துரைக்கப்பட்ட பூட்டறைகள்' : 'Recommended Lockers',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          TextButton(
+            onPressed: () {},
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.primaryLight,
+            ),
+            child: Text(
+              language == 'ta' ? 'அனைத்தையும் காண்க' : 'See all',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryLight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLockerCard(BuildContext context, int index) {
+    final locker = lockers[index];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.softShadow,
+        border: Border.all(
+          color: locker['available'] == true 
+              ? AppTheme.primary.withOpacity(0.3) 
+              : Colors.transparent,
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: locker['available'] == true
+              ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LocationsScreen(selectedArea: 'Peelamedu'),
+                    ),
+                  )
+              : null,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 65,
+                  height: 65,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: AppTheme.glowShadow,
+                  ),
+                  child: const Icon(Icons.lock_outline, color: Colors.white, size: 30),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        locker['name'] as String,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 14, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              locker['address'] as String,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFFCBD5E1)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 14, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${locker['rating']}',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFF59E0B), fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.access_time, size: 14, color: Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '24/7 Access',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: AppTheme.smallShadow,
+                      ),
+                      child: Text(
+                        '₹${locker['price']}/hr',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: (locker['available'] == true
+                            ? AppTheme.success
+                            : AppTheme.danger).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            locker['available'] == true ? Icons.check_circle : Icons.cancel,
+                            size: 12,
+                            color: locker['available'] == true ? AppTheme.success : AppTheme.danger,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            locker['available'] == true 
+                                ? (language == 'ta' ? 'கிடைக்கும்' : 'Available') 
+                                : (language == 'ta' ? 'நிரம்பியது' : 'Full'),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: locker['available'] == true ? AppTheme.success : AppTheme.danger,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(language == 'ta' ? '✨ அம்சம் விரைவில் வரும்! காத்திருங்கள்! ✨' : '✨ Feature coming soon! Stay tuned! ✨'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppTheme.primary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppTheme.surfaceLight, AppTheme.cardColor],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: AppTheme.smallShadow,
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [color, color.withOpacity(0.7)]),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.5),
+                    blurRadius: 15,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: Colors.white, size: 30),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13, 
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

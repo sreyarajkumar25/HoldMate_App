@@ -1,0 +1,25 @@
+name: holdmate
+description: HoldMate - Secure bag storage app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  shared_preferences: ^2.2.2
+  intl: ^0.20.2  # Changed from ^0.18.1 to ^0.20.2
+  http: ^1.1.0
+  flutter_localizations:  # Keep this
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
