@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Holdmate</string>
+	<string>Hold Mate</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>holdmate</string>
+	<string>HoldMate</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,6 +26,22 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	
+	<!-- Location Permissions for Map Integration -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Hold Mate needs your location to show nearby places and help you with location-based tasks</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Hold Mate needs your location to show nearby places and help you with location-based tasks</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Hold Mate needs your location to show nearby places and help you with location-based tasks</string>
+	
+	<!-- Internet Permission (Required for map tiles) -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
